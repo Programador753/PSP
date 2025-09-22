@@ -1,6 +1,6 @@
 package practica2;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.Semaphore;
 
 public class Main2 {
     // Dimensiones del problema
@@ -19,12 +19,12 @@ public class Main2 {
     // Variables para rastrear el thread más lento
     private static long tMax = 0; // Tiempo máximo en nanosegundos
     private static int idMasLento = -1; // ID del thread más lento
-    private static AtomicBoolean lockTiempo = new AtomicBoolean(false); // Para exclusión mutua
+    private static Semaphore semaforoTiempo = new Semaphore(1); // Para exclusión mutua
 
     /**
      * Pre: ---
      * Post: Ejecuta el cálculo del producto matriz-vector usando 16 threads
-     *       e identifica el thread más lento usando exclusión mutua con test-and-set
+     *       e identifica el thread más lento usando exclusión mutua con semáforo
      */
     public static void main(String[] args) {
         System.out.println("Iniciando cálculo del producto matriz-vector con " + NUM_THREADS + " threads");
@@ -110,16 +110,13 @@ public class Main2 {
     /**
      * Pre: tiempoEjecucion >= 0, idThread >= 0
      * Post: Actualiza tMax e idMasLento si este thread ha sido más lento
-     *       usando exclusión mutua con test-and-set
+     *       usando exclusión mutua con semáforo
      */
     public static void actualizarThreadMasLento(long tiempoEjecucion, int idThread) {
-        // Implementación de test-and-set para exclusión mutua
-        while (lockTiempo.getAndSet(true)) {
-            // Espera activa hasta conseguir el lock
-            Thread.yield();
-        }
-
         try {
+            // Adquirir el semáforo (entrar en sección crítica)
+            semaforoTiempo.acquire();
+
             // Sección crítica: actualizar variables compartidas
             if (tiempoEjecucion > tMax) {
                 tMax = tiempoEjecucion;
@@ -127,9 +124,11 @@ public class Main2 {
                 System.out.println("Nuevo thread más lento: Thread " + idThread +
                         " con tiempo: " + (tiempoEjecucion / 1_000_000.0) + " ms");
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         } finally {
-            // Liberar el lock
-            lockTiempo.set(false);
+            // Liberar el semáforo (salir de sección crítica)
+            semaforoTiempo.release();
         }
     }
 
