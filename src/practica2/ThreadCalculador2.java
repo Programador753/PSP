@@ -4,22 +4,17 @@ public class ThreadCalculador2 extends Thread {
     private int id;
     private int filaInicio;
     private int filaFin;
-    private float[][] matriz;
-    private float[] vector;
-    private float[] resultado;
 
     /**
-     * Pre: id >= 0, matriz != null, vector != null, resultado != null
+     * Pre: id >= 0
      * Post: Crea un thread calculador para procesar las filas correspondientes
-     *       y medir su tiempo de ejecución
+     *       y medir su tiempo de ejecución, accediendo a los datos compartidos
+     *       a través de ShareData
      */
-    public ThreadCalculador2(int id, float[][] matriz, float[] vector, float[] resultado) {
+    public ThreadCalculador2(int id) {
         this.id = id;
-        this.matriz = matriz;
-        this.vector = vector;
-        this.resultado = resultado;
-        this.filaInicio = id * Main2.getFilasPorThread();
-        this.filaFin = filaInicio + Main2.getFilasPorThread();
+        this.filaInicio = id * ShareData.getFilasPorThread();
+        this.filaFin = filaInicio + ShareData.getFilasPorThread();
     }
 
     /**
@@ -38,10 +33,10 @@ public class ThreadCalculador2 extends Thread {
         // Calcular producto parcial para las filas asignadas
         for (int i = filaInicio; i < filaFin; i++) {
             float suma = 0.0f;
-            for (int j = 0; j < Main2.getN(); j++) {
-                suma += matriz[i][j] * vector[j];
+            for (int j = 0; j < ShareData.getN(); j++) {
+                suma += ShareData.getMatrizElement(i, j) * ShareData.getVectorElement(j);
             }
-            resultado[i] = suma;
+            ShareData.setResultadoElement(i, suma);
         }
 
         long tiempoFin = System.nanoTime();
@@ -52,9 +47,9 @@ public class ThreadCalculador2 extends Thread {
                 (tiempoEjecucion / 1_000_000.0) + " ms");
 
         // Actualizar el thread más lento usando exclusión mutua
-        Main2.actualizarThreadMasLento(tiempoEjecucion, id);
+        ShareData.actualizarThreadMasLento(tiempoEjecucion, id);
 
         // Sincronización: notificar finalización al proceso principal
-        Main2.incrementarThreadsFinalizados();
+        ShareData.incrementarThreadsFinalizados();
     }
 }
