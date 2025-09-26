@@ -4,15 +4,17 @@ public class ThreadCalculador2 extends Thread {
     private int id;
     private int filaInicio;
     private int filaFin;
+    private ShareData shareData; // Referencia al objeto de datos compartidos
 
     /**
-     * Pre: id >= 0
+     * Pre: id >= 0, shareData != null
      * Post: Crea un thread calculador para procesar las filas correspondientes
      *       y medir su tiempo de ejecución, accediendo a los datos compartidos
-     *       a través de ShareData
+     *       a través del objeto ShareData proporcionado
      */
-    public ThreadCalculador2(int id) {
+    public ThreadCalculador2(int id, ShareData shareData) {
         this.id = id;
+        this.shareData = shareData;
         this.filaInicio = id * ShareData.getFilasPorThread();
         this.filaFin = filaInicio + ShareData.getFilasPorThread();
     }
@@ -34,9 +36,9 @@ public class ThreadCalculador2 extends Thread {
         for (int i = filaInicio; i < filaFin; i++) {
             float suma = 0.0f;
             for (int j = 0; j < ShareData.getN(); j++) {
-                suma += ShareData.getMatrizElement(i, j) * ShareData.getVectorElement(j);
+                suma += shareData.getMatrizElement(i, j) * shareData.getVectorElement(j);
             }
-            ShareData.setResultadoElement(i, suma);
+            shareData.setResultadoElement(i, suma);
         }
 
         long tiempoFin = System.nanoTime();
@@ -47,9 +49,9 @@ public class ThreadCalculador2 extends Thread {
                 (tiempoEjecucion / 1_000_000.0) + " ms");
 
         // Actualizar el thread más lento usando exclusión mutua
-        ShareData.actualizarThreadMasLento(tiempoEjecucion, id);
+        shareData.actualizarThreadMasLento(tiempoEjecucion, id);
 
         // Sincronización: notificar finalización al proceso principal
-        ShareData.incrementarThreadsFinalizados();
+        shareData.incrementarThreadsFinalizados();
     }
 }
