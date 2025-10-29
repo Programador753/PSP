@@ -27,7 +27,7 @@ public class Avion {
      *       Si el formato es inválido, retorna "ERROR:..."
      *
      * @param plaza Identificador de la plaza (ej: "2C")
-     * @return Respuesta según el protocolo establecido
+     *
      */
     public synchronized String reservarPlaza(String plaza) {
         /*
@@ -73,9 +73,10 @@ public class Avion {
      * Pre: ninguna
      * Post: Retorna true si hay al menos una plaza libre, false si está completo
      *
-     * @return true si hay plazas libres, false en caso contrario
+     *
      */
     public synchronized boolean hayPlazasLibres() {
+
         return plazasOcupadas < (FILAS * ASIENTOS);
     }
 
@@ -84,7 +85,7 @@ public class Avion {
      * Post: Retorna una cadena con el estado de todas las plazas en formato
      *       "XXXX-LXXL-XXXX-LLLL" donde X=ocupada, L=libre, separadas por filas
      *
-     * @return Estado del avión codificado
+     *
      */
     private String getEstadoAvion() {
         StringBuilder estado = new StringBuilder();
@@ -103,7 +104,7 @@ public class Avion {
      * Pre: ninguna
      * Post: Retorna el número actual de plazas ocupadas
      *
-     * @return Número de plazas ocupadas (0-16)
+     *
      */
     public synchronized int getPlazasOcupadas() {
         return plazasOcupadas;

@@ -18,7 +18,7 @@ public class Cliente extends Conexion {
      * Post: Se crea un cliente conectado al servidor con el nombre especificado
      *
      * @param nombre Nombre identificador del cliente
-     * @throws IOException Si hay error en la conexión con el servidor
+     *
      */
     public Cliente(String nombre) throws IOException {
         super("cliente");
@@ -91,9 +91,6 @@ public class Cliente extends Conexion {
      *
      * @param in Stream de entrada para recibir respuestas del servidor
      * @param out Stream de salida para enviar peticiones al servidor
-     * @return Número de plazas reservadas exitosamente
-     * @throws IOException Si hay error de comunicación
-     * @throws InterruptedException Si el thread es interrumpido
      */
     private int realizarReservas(DataInputStream in, DataOutputStream out)
             throws IOException, InterruptedException {

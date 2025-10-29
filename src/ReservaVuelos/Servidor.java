@@ -14,7 +14,6 @@ public class Servidor extends Conexion {
      * Pre: ninguna
      * Post: Se crea el servidor y se inicializa el avión con 16 plazas libres (4x4)
      *
-     * @throws IOException Si hay error al crear el socket del servidor
      */
     public Servidor() throws IOException {
         super("servidor");

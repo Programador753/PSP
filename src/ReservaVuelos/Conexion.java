@@ -19,7 +19,7 @@ public class Conexion {
      * Post: crea un ServerSocket en el puerto 1234 si tipo es "servidor",
      *       o crea un Socket cliente conectado a localhost:1234 en caso contrario
      * @param tipo String que indica si se crea un socket de "servidor" o cliente
-     * @throws IOException si ocurre un error al crear el socket
+     *
      */
     public Conexion(String tipo) throws IOException {
         /*

@@ -11,8 +11,6 @@ public class MainServidor {
      * Pre: ninguna
      * Post: Se crea e inicia el servidor de reservas. El servidor queda
      *       en espera de clientes de forma indefinida.
-     *
-     * @param args Argumentos de línea de comandos (no se utilizan)
      */
     public static void main(String[] args) {
         try {
