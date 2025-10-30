@@ -6,28 +6,28 @@ import java.io.IOException;
 import java.net.Socket;
 
 /**
- * Thread que atiende a un cliente específico del sistema de reservas.
+ * Thread del servidor que atiende a un cliente específico del sistema de reservas.
  * Gestiona el protocolo de comunicación para reservas de plazas de avión.
- *
+ * Permite que el servidor continúe aceptando nuevas conexiones mientras atiende clientes.
  */
-public class ThreadCliente extends Thread {
+public class ThreadServidor extends Thread {
     private final Socket clienteSocket;
     private final int numeroCliente;
-    private final Avion avion;
+    private final DatosCompartidos datosCompartidos;
 
     /**
-     * Pre: socket != null, numeroCliente > 0, avion != null
+     * Pre: socket != null, numeroCliente > 0, datosCompartidos != null
      * Post: Se crea un thread listo para atender al cliente con los
      *       parámetros especificados
      *
      * @param socket Socket de conexión con el cliente
      * @param numeroCliente Número identificador del cliente
-     * @param avion Instancia compartida del avión para gestionar reservas
+     * @param datosCompartidos Instancia compartida de datos con avión y semáforos
      */
-    public ThreadCliente(Socket socket, int numeroCliente, Avion avion) {
+    public ThreadServidor(Socket socket, int numeroCliente, DatosCompartidos datosCompartidos) {
         this.clienteSocket = socket;
         this.numeroCliente = numeroCliente;
-        this.avion = avion;
+        this.datosCompartidos = datosCompartidos;
     }
 
     /**
@@ -43,9 +43,6 @@ public class ThreadCliente extends Thread {
         String nombreCliente = "Cliente #" + numeroCliente;
 
         try {
-            /*
-             * Inicialización de los streams de entrada/salida
-             */
             in = new DataInputStream(clienteSocket.getInputStream());
             out = new DataOutputStream(clienteSocket.getOutputStream());
 
@@ -54,15 +51,9 @@ public class ThreadCliente extends Thread {
 
             System.out.println("Cliente #" + numeroCliente + " conectado");
 
-            /*
-             * Bucle principal de atención al cliente
-             */
             while (clienteActivo) {
                 mensaje = in.readUTF();
 
-                /*
-                 * Procesamiento del protocolo INICIO COMPRA
-                 */
                 if (mensaje.startsWith("INICIO COMPRA:")) {
                     nombreCliente = mensaje.substring(14).trim();
                     System.out.println("Cliente identificado: " + nombreCliente);
@@ -70,38 +61,23 @@ public class ThreadCliente extends Thread {
                     out.writeUTF("BIENVENIDO AL SERVICIO");
                     out.flush();
 
-                /*
-                 * Procesamiento del protocolo RESERVAR
-                 */
                 } else if (mensaje.startsWith("RESERVAR:")) {
                     String plaza = mensaje.substring(9).trim();
 
-                    if (!avion.hayPlazasLibres()) {
-                        /*
-                         * No quedan plazas disponibles
-                         */
+                    if (!datosCompartidos.hayPlazasLibres()) {
                         out.writeUTF("VUELO COMPLETO");
                         out.flush();
                         clienteActivo = false;
                     } else {
-                        /*
-                         * Intentar reservar la plaza solicitada
-                         */
-                        String respuesta = avion.reservarPlaza(plaza);
+                        String respuesta = datosCompartidos.reservarPlaza(plaza);
                         out.writeUTF(respuesta);
                         out.flush();
 
-                        /*
-                         * Notificar si se completó el avión con esta reserva
-                         */
-                        if (!avion.hayPlazasLibres() && respuesta.startsWith("RESERVADA:")) {
+                        if (!datosCompartidos.hayPlazasLibres() && respuesta.startsWith("RESERVADA:")) {
                             System.out.println("AVIÓN COMPLETO - Todas las plazas reservadas");
                         }
                     }
                 } else {
-                    /*
-                     * Comando no reconocido
-                     */
                     out.writeUTF("ERROR:Comando no reconocido");
                     out.flush();
                 }
@@ -112,9 +88,6 @@ public class ThreadCliente extends Thread {
         } catch (Exception e) {
             System.err.println("Error inesperado con " + nombreCliente + ": " + e.getMessage());
         } finally {
-            /*
-             * Cierre de recursos
-             */
             cerrarRecursos(in, out);
             System.out.println("Desconectado: " + nombreCliente);
         }

@@ -8,16 +8,17 @@ import java.io.IOException;
  *
  */
 public class Servidor extends Conexion {
-    private final Avion avion;
+    private final DatosCompartidos datosCompartidos;
 
     /**
      * Pre: ninguna
-     * Post: Se crea el servidor y se inicializa el avión con 16 plazas libres (4x4)
+     * Post: Se crea el servidor y se inicializan los datos compartidos con
+     *       el avión y semáforos para cada plaza
      *
      */
     public Servidor() throws IOException {
         super("servidor");
-        this.avion = new Avion();
+        this.datosCompartidos = new DatosCompartidos();
     }
 
     /**
@@ -52,8 +53,8 @@ public class Servidor extends Conexion {
                 /*
                  * Crear y arrancar thread para atender al cliente
                  */
-                ThreadCliente threadCliente = new ThreadCliente(cs, numeroCliente, avion);
-                threadCliente.start();
+                ThreadServidor threadServidor = new ThreadServidor(cs, numeroCliente, datosCompartidos);
+                threadServidor.start();
             }
 
         } catch (IOException e) {

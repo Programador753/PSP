@@ -10,6 +10,7 @@ import java.util.Random;
  * Intenta reservar el máximo número de plazas posible de forma automática.
  */
 public class Cliente extends Conexion {
+    private static final Object CONSOLE_LOCK = new Object();
     private final String nombreCliente;
 
     /**
@@ -34,15 +35,11 @@ public class Cliente extends Conexion {
         DataOutputStream out = null;
 
         try {
-            // Inicialización de streams de comunicación
             in = new DataInputStream(cs.getInputStream());
             out = new DataOutputStream(cs.getOutputStream());
 
-            System.out.println("\n[" + nombreCliente + "] ==========================================");
-            System.out.println("[" + nombreCliente + "]   CLIENTE: " + nombreCliente);
-            System.out.println("[" + nombreCliente + "] ==========================================");
+            imprimirEncabezado();
 
-            // PASO 1: Protocolo de inicio - Enviar identificación
             String mensajeInicio = "INICIO COMPRA:" + nombreCliente;
             out.writeUTF(mensajeInicio);
             out.flush();
@@ -50,25 +47,43 @@ public class Cliente extends Conexion {
             String respuesta = in.readUTF();
 
             if (!respuesta.equals("BIENVENIDO AL SERVICIO")) {
-                System.err.println("[" + nombreCliente + "] Error: No se recibió bienvenida del servidor");
+                synchronized (CONSOLE_LOCK) {
+                    System.err.println("[" + nombreCliente + "] Error: No se recibió bienvenida del servidor");
+                }
                 return;
             }
 
-            System.out.println("[" + nombreCliente + "] Conexión establecida. Iniciando reservas...");
+            synchronized (CONSOLE_LOCK) {
+                System.out.println("[" + nombreCliente + "] Conexión establecida. Iniciando reservas...");
+            }
 
-            // PASO 2: Bucle de reservas - Intentar reservar plazas
             int plazasReservadas = realizarReservas(in, out);
 
-            // PASO 3: Mostrar resumen final
             mostrarResumen(plazasReservadas);
 
         } catch (IOException e) {
-            System.err.println("[" + nombreCliente + "] Error de comunicación con el servidor: " + e.getMessage());
+            synchronized (CONSOLE_LOCK) {
+                System.err.println("[" + nombreCliente + "] Error de comunicación con el servidor: " + e.getMessage());
+            }
         } catch (Exception e) {
-            System.err.println("[" + nombreCliente + "] Error inesperado: " + e.getMessage());
+            synchronized (CONSOLE_LOCK) {
+                System.err.println("[" + nombreCliente + "] Error inesperado: " + e.getMessage());
+            }
         } finally {
-            // Cierre de recursos
             cerrarRecursos(in, out);
+        }
+    }
+
+    /**
+     * Pre: ninguna
+     * Post: Imprime el encabezado del cliente de forma sincronizada
+     */
+    private void imprimirEncabezado() {
+        synchronized (CONSOLE_LOCK) {
+            System.out.println();
+            System.out.println("[" + nombreCliente + "] ==========================================");
+            System.out.println("[" + nombreCliente + "]   CLIENTE: " + nombreCliente);
+            System.out.println("[" + nombreCliente + "] ==========================================");
         }
     }
 
@@ -88,12 +103,10 @@ public class Cliente extends Conexion {
         char[] asientos = {'A', 'B', 'C', 'D'};
 
         while (true) {
-            // Generar plaza aleatoria (ej: "3B")
-            int fila = random.nextInt(4) + 1; // 1-4
-            char asiento = asientos[random.nextInt(4)]; // A-D
+            int fila = random.nextInt(4) + 1;
+            char asiento = asientos[random.nextInt(4)];
             String plaza = "" + fila + asiento;
 
-            // Enviar petición de reserva
             String peticion = "RESERVAR:" + plaza;
             out.writeUTF(peticion);
             out.flush();
@@ -101,21 +114,22 @@ public class Cliente extends Conexion {
             String respuesta = in.readUTF();
 
             if (respuesta.startsWith("RESERVADA:")) {
-                // Reserva exitosa
                 plazasReservadas++;
                 String plazaReservada = respuesta.substring(10);
-                System.out.println("[" + nombreCliente + "] ✓ Plaza " + plazaReservada + " reservada (Total: " + plazasReservadas + ")");
+                synchronized (CONSOLE_LOCK) {
+                    System.out.println("[" + nombreCliente + "] ✓ Plaza " + plazaReservada + " reservada (Total: " + plazasReservadas + ")");
+                }
             } else if (respuesta.equals("VUELO COMPLETO")) {
-                // No quedan plazas disponibles
-                System.out.println("[" + nombreCliente + "] Vuelo completo - No hay más plazas disponibles");
+                synchronized (CONSOLE_LOCK) {
+                    System.out.println("[" + nombreCliente + "] Vuelo completo - No hay más plazas disponibles");
+                }
                 break;
             } else if (respuesta.startsWith("ERROR:")) {
-                // Error en la petición
-                System.err.println("[" + nombreCliente + "] Error del servidor: " + respuesta.substring(6));
+                synchronized (CONSOLE_LOCK) {
+                    System.err.println("[" + nombreCliente + "] Error del servidor: " + respuesta.substring(6));
+                }
             }
-            // Si la plaza está ocupada, se reintenta con otra (sin mostrar mensaje)
 
-            // Pausa breve para simular comportamiento realista
             Thread.sleep(100);
         }
 
@@ -129,11 +143,13 @@ public class Cliente extends Conexion {
      * @param plazasReservadas Número de plazas reservadas por el cliente
      */
     private void mostrarResumen(int plazasReservadas) {
-        System.out.println("[" + nombreCliente + "] ==========================================");
-        System.out.println("[" + nombreCliente + "]   RESUMEN - " + nombreCliente);
-        System.out.println("[" + nombreCliente + "] ==========================================");
-        System.out.println("[" + nombreCliente + "] Plazas reservadas: " + plazasReservadas);
-        System.out.println("[" + nombreCliente + "] ==========================================");
+        synchronized (CONSOLE_LOCK) {
+            System.out.println("[" + nombreCliente + "] ==========================================");
+            System.out.println("[" + nombreCliente + "]   RESUMEN - " + nombreCliente);
+            System.out.println("[" + nombreCliente + "] ==========================================");
+            System.out.println("[" + nombreCliente + "] Plazas reservadas: " + plazasReservadas);
+            System.out.println("[" + nombreCliente + "] ==========================================");
+        }
     }
 
     /**
@@ -155,9 +171,13 @@ public class Cliente extends Conexion {
             if (cs != null && !cs.isClosed()) {
                 cs.close();
             }
-            System.out.println("[" + nombreCliente + "] Desconectado del servidor\n");
+            synchronized (CONSOLE_LOCK) {
+                System.out.println("[" + nombreCliente + "] Desconectado del servidor\n");
+            }
         } catch (IOException e) {
-            System.err.println("[" + nombreCliente + "] Error al cerrar conexión: " + e.getMessage());
+            synchronized (CONSOLE_LOCK) {
+                System.err.println("[" + nombreCliente + "] Error al cerrar conexión: " + e.getMessage());
+            }
         }
     }
 }
