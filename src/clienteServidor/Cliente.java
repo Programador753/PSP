@@ -1,3 +1,4 @@
+
 package clienteServidor;
 
 import java.io.BufferedReader;
@@ -6,12 +7,42 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+/**
+ * Clase que representa un cliente en el sistema cliente-servidor.
+ * El cliente se conecta a un servidor específico y permite enviar mensajes
+ * que serán procesados por el servidor para contar las vocales que contienen.
+ *
+ * @author Sistema PSP
+ * @version 1.0
+ */
 public class Cliente extends Conexion {
-    public Cliente(String host, int puerto) throws IOException {
-    	super("cliente", host, puerto);
-    } //Se usa el constructor para cliente de Conexion
 
-    public void startClient() {//Método para iniciar el cliente
+    /**
+     * Constructor del cliente que establece la conexión con el servidor.
+     *
+     * @param host Dirección IP o nombre del host del servidor
+     * @param puerto Puerto en el que el servidor está escuchando
+     * @throws IOException Si ocurre un error al establecer la conexión
+     */
+    public Cliente(String host, int puerto) throws IOException {
+        super("cliente", host, puerto);
+    }
+
+    /**
+     * Inicia el cliente y gestiona la comunicación con el servidor.
+     * Permite al usuario enviar múltiples mensajes hasta que escriba "END OF SERVICE".
+     * Por cada mensaje, el servidor responde con el número de vocales que contiene.
+     *
+     * Protocolo de comunicación:
+     * 1. Recibe mensaje de bienvenida del servidor
+     * 2. Lee mensaje del usuario desde teclado
+     * 3. Envía el mensaje al servidor
+     * 4. Recibe y muestra la respuesta del servidor
+     * 5. Repite desde el paso 2 hasta que el usuario escriba "END OF SERVICE"
+     *
+     * @see Servidor#startServer()
+     */
+    public void startClient() {
         try {
             // Canal para recibir mensajes (entrada)
             DataInputStream in = new DataInputStream(cs.getInputStream());
@@ -54,4 +85,3 @@ public class Cliente extends Conexion {
         }
     }
 }
-

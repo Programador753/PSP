@@ -1,8 +1,32 @@
+
 package eda;
 
 import java.util.ArrayList;
 
+/**
+ * Clase principal para demostrar el uso de la lista doblemente enlazada.
+ *
+ * Esta clase contiene ejemplos de las operaciones básicas que se pueden
+ * realizar con una DoubleLinkedList.
+ *
+ * @author Sistema EDA
+ * @version 1.0
+ * @see DoubleLinkedList
+ * @see Node2
+ */
 public class Main2 {
+    /**
+     * Método principal que demuestra el uso de la lista doblemente enlazada.
+     *
+     * Operaciones demostradas:
+     * - Creación de nodos
+     * - Inserción al final
+     * - Inserción en posición específica
+     * - Eliminación por posición
+     * - Visualización de la lista
+     *
+     * @param args Argumentos de línea de comandos (no utilizados)
+     */
     public static void main(String[] args) {
         // Probando DoubleLinkedList
         DoubleLinkedList l = new DoubleLinkedList();

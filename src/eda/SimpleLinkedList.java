@@ -1,40 +1,77 @@
 package eda;
 
 /**
- * Esta clase contiene las metodos para la creacion de una
- * lista enlazada simple.
+ * Clase que implementa una lista enlazada simple.
+ *
+ * Una lista enlazada simple es una estructura de datos lineal donde cada elemento
+ * (nodo) contiene un valor y una referencia al siguiente elemento.
+ *
+ * Operaciones soportadas:
+ * - Inserción al final de la lista
+ * - Inserción en posición específica
+ * - Eliminación por posición
+ * - Consulta de elementos
+ * - Verificación de lista vacía
  *
  * @author Alvaro Juan Ciriaco
+ * @version 1.0
+ * @see Node
  */
 public class SimpleLinkedList {
+    /** Número de elementos en la lista */
     private int size;
+
+    /** Primer nodo de la lista */
     private Node first;
 
+    /**
+     * Constructor que crea una lista enlazada simple vacía.
+     */
     public SimpleLinkedList() {
         this.size = 0;
         this.first = null;
     }
 
+    /**
+     * Obtiene el tamaño actual de la lista.
+     *
+     * @return Número de elementos en la lista
+     */
     public int getSize() {
         return size;
     }
 
+    /**
+     * Establece el tamaño de la lista.
+     *
+     * @param size Nuevo tamaño de la lista
+     */
     public void setSize(int size) {
         this.size = size;
     }
 
+    /**
+     * Obtiene el primer nodo de la lista.
+     *
+     * @return Primer nodo, o null si la lista está vacía
+     */
     public Node getFirst() {
         return first;
     }
 
+    /**
+     * Establece el primer nodo de la lista.
+     *
+     * @param first Nuevo primer nodo de la lista
+     */
     public void setFirst(Node first) {
         this.first = first;
     }
 
     /**
-     * Este metodo permite anadir un nuevo nodo a la lista
-     * enlazada simple. Lo inserta siempre en la ultima posicion.
-     * @param node contiene el nodo a insertar.
+     * Añade un nuevo nodo al final de la lista.
+     *
+     * @param node Nodo a insertar al final de la lista
      */
     public void add(Node node) {
         if(isEmpty()) this.first = node;
@@ -47,10 +84,14 @@ public class SimpleLinkedList {
     }
 
     /**
-     * Este metodo permite anadir un nuevo nodo a la lista
-     * enlazada simple en una posicion especifica.
-     * @param node contiene el nodo a insertar.
-     * @param position posicion donde insertar el nodo (empezando desde 0).
+     * Inserta un nodo en una posición específica de la lista.
+     *
+     * Las posiciones comienzan en 0. Si la posición es 0, el nodo se inserta
+     * al principio. Si la posición es mayor o igual al tamaño, se lanza una excepción.
+     *
+     * @param node Nodo a insertar
+     * @param position Posición donde insertar el nodo (0-indexed)
+     * @throws IndexOutOfBoundsException Si la posición es inválida
      */
     public void add(Node node, int position) {
         // Validar posición
@@ -75,11 +116,11 @@ public class SimpleLinkedList {
         size++;
     }
 
-
     /**
-     * Este metodo permite eliminar un nodo de la lista
-     * en la posicion con valor [position]
-     * @param position contiene la posicion del nodo a eliminar.
+     * Elimina el nodo en la posición especificada.
+     *
+     * @param position Posición del nodo a eliminar (0-indexed)
+     * @throws IndexOutOfBoundsException Si la posición es inválida
      */
     public void delete(int position) {
         // Validar posicion
@@ -109,20 +150,20 @@ public class SimpleLinkedList {
     }
 
     /**
-     * Este metodo devuelve el nodo que se encuentra en la posicion
-     * con valor [position]
-     * @param position contiene la posicion del nodo a devolver
-     * @return el nodo en la posicion [position]
+     * Obtiene el nodo en la posición especificada.
+     *
+     * @param position Posición del nodo a obtener (0-indexed)
+     * @return Nodo en la posición especificada, o null si no está implementado
+     * @deprecated Este método aún no está implementado
      */
     public Node get(int position) {
         return null;
     }
 
     /**
-     * Indica si la lista esta vacia o no.
-     * @return devuelve [true] si y solo si la lista
-     * no contiene ningun nodo. Devuelve [false] en caso
-     * contrario.
+     * Verifica si la lista está vacía.
+     *
+     * @return true si la lista no contiene elementos, false en caso contrario
      */
     public boolean isEmpty() {
         if(this.size == 0) return true;
@@ -130,9 +171,10 @@ public class SimpleLinkedList {
     }
 
     /**
-     * Este metodo muestra por pantalla los nodos
-     * que contiene la lista enlazada. Siempre desde la
-     * primera posicion hasta la ultima.
+     * Muestra por pantalla todos los elementos de la lista.
+     *
+     * Los elementos se muestran desde el primero hasta el último,
+     * cada uno en una línea separada.
      */
     public void show() {
         Node p = first;

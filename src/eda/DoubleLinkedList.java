@@ -2,50 +2,105 @@
 package eda;
 
 /**
- * Esta clase contiene los métodos para la creación de una
- * lista enlazada doble.
+ * Clase que implementa una lista doblemente enlazada.
  *
+ * Una lista doblemente enlazada es una estructura de datos lineal donde cada elemento
+ * (nodo) contiene un valor y referencias tanto al siguiente como al anterior elemento.
  *
+ * Operaciones soportadas:
+ * - Inserción al final de la lista
+ * - Inserción al principio de la lista
+ * - Inserción en posición específica
+ * - Eliminación por posición
+ * - Eliminación de un nodo específico
+ * - Consulta de elementos
+ * - Recorrido normal y en reversa
+ * - Verificación de lista vacía
+ *
+ * @author Sistema EDA
+ * @version 1.0
+ * @see Node2
  */
 public class DoubleLinkedList {
-    private Node2 head; // Primer nodo de la lista
-    private Node2 tail; // Último nodo de la lista
-    private int size;  // Tamaño actual de la lista
+    /** Primer nodo de la lista */
+    private Node2 head;
 
+    /** Último nodo de la lista */
+    private Node2 tail;
+
+    /** Tamaño actual de la lista */
+    private int size;
+
+    /**
+     * Constructor que crea una lista doblemente enlazada vacía.
+     */
     public DoubleLinkedList() {
         this.head = null;
         this.tail = null;
         this.size = 0;
     }
 
+    /**
+     * Obtiene el tamaño actual de la lista.
+     *
+     * @return Número de elementos en la lista
+     */
     public int getSize() {
         return size;
     }
 
+    /**
+     * Establece el tamaño de la lista.
+     *
+     * @param size Nuevo tamaño de la lista
+     */
     public void setSize(int size) {
         this.size = size;
     }
 
+    /**
+     * Obtiene el primer nodo de la lista.
+     *
+     * @return Primer nodo (head), o null si la lista está vacía
+     */
     public Node2 getHead() {
         return head;
     }
 
+    /**
+     * Establece el primer nodo de la lista.
+     *
+     * @param head Nuevo primer nodo de la lista
+     */
     public void setHead(Node2 head) {
         this.head = head;
     }
 
+    /**
+     * Obtiene el último nodo de la lista.
+     *
+     * @return Último nodo (tail), o null si la lista está vacía
+     */
     public Node2 getTail() {
         return tail;
     }
 
+    /**
+     * Establece el último nodo de la lista.
+     *
+     * @param tail Nuevo último nodo de la lista
+     */
     public void setTail(Node2 tail) {
         this.tail = tail;
     }
 
     /**
-     * Este método permite añadir un nuevo nodo a la lista
-     * enlazada doble. Lo inserta siempre en la última posición.
-     * @param node contiene el nodo a insertar.
+     * Añade un nuevo nodo al final de la lista.
+     *
+     * Si la lista está vacía, el nodo se convierte tanto en head como en tail.
+     * Si la lista no está vacía, el nodo se añade después del tail actual.
+     *
+     * @param node Nodo a insertar al final de la lista
      */
     public void add(Node2 node) {
         if (isEmpty()) {
@@ -65,10 +120,14 @@ public class DoubleLinkedList {
     }
 
     /**
-     * Este método permite añadir un nuevo nodo a la lista
-     * enlazada doble en una posición específica.
-     * @param node contiene el nodo a insertar.
-     * @param position posición donde insertar el nodo (empezando desde 0).
+     * Inserta un nodo en una posición específica de la lista.
+     *
+     * Las posiciones comienzan en 0. Si la posición es 0, el nodo se inserta
+     * al principio. Si la posición es igual al tamaño, se inserta al final.
+     *
+     * @param node Nodo a insertar
+     * @param position Posición donde insertar el nodo (0-indexed)
+     * @throws IndexOutOfBoundsException Si la posición es inválida (menor que 0 o mayor que size)
      */
     public void add(Node2 node, int position) {
         // Validar posición
@@ -97,9 +156,12 @@ public class DoubleLinkedList {
     }
 
     /**
-     * Este método permite añadir un nuevo nodo al principio
-     * de la lista enlazada doble.
-     * @param node contiene el nodo a insertar.
+     * Añade un nuevo nodo al principio de la lista.
+     *
+     * Si la lista está vacía, el nodo se convierte tanto en head como en tail.
+     * Si la lista no está vacía, el nodo se convierte en el nuevo head.
+     *
+     * @param node Nodo a insertar al principio de la lista
      */
     public void addAtBeginning(Node2 node) {
         if (isEmpty()) {
@@ -119,9 +181,10 @@ public class DoubleLinkedList {
     }
 
     /**
-     * Este método permite eliminar un nodo de la lista
-     * en la posición con valor [position]
-     * @param position contiene la posición del nodo a eliminar.
+     * Elimina el nodo en la posición especificada.
+     *
+     * @param position Posición del nodo a eliminar (0-indexed)
+     * @throws IndexOutOfBoundsException Si la posición es inválida (menor que 0 o mayor o igual que size)
      */
     public void delete(int position) {
         // Validar posición
@@ -139,8 +202,15 @@ public class DoubleLinkedList {
     }
 
     /**
-     * Este método elimina un nodo específico de la lista enlazada doble.
-     * @param node contiene el nodo a eliminar.
+     * Elimina un nodo específico de la lista enlazada doble.
+     *
+     * Maneja los casos especiales:
+     * - Si es el único nodo en la lista
+     * - Si es el primer nodo (head)
+     * - Si es el último nodo (tail)
+     * - Si es un nodo intermedio
+     *
+     * @param node Nodo a eliminar de la lista
      */
     public void deleteNode(Node2 node) {
         if (node == null) return;
@@ -173,10 +243,14 @@ public class DoubleLinkedList {
 
 
     /**
-     * Este método devuelve el nodo que se encuentra en la posición
-     * con valor [position]. Optimizado para recorrer desde el extremo más cercano.
-     * @param position contiene la posición del nodo a devolver
-     * @return el nodo en la posición [position]
+     * Obtiene el nodo que se encuentra en la posición especificada.
+     *
+     * Método privado optimizado que recorre la lista desde el extremo más cercano
+     * (principio o final) para minimizar el número de iteraciones.
+     *
+     * @param position Posición del nodo a obtener (0-indexed)
+     * @return Nodo en la posición especificada
+     * @throws IndexOutOfBoundsException Si la posición es inválida
      */
     private Node2 getNodeAt(int position) {
         // Validar posición
@@ -203,39 +277,41 @@ public class DoubleLinkedList {
     }
 
     /**
-     * Este método devuelve el nodo que se encuentra en la posición
-     * con valor [position]
-     * @param position contiene la posición del nodo a devolver
-     * @return el nodo en la posición [position]
+     * Obtiene el nodo que se encuentra en la posición especificada.
+     *
+     * @param position Posición del nodo a obtener (0-indexed)
+     * @return Nodo en la posición especificada
+     * @throws IndexOutOfBoundsException Si la posición es inválida
      */
     public Node2 get(int position) {
         return getNodeAt(position);
     }
 
     /**
-     * Este método devuelve el contenido del nodo que se encuentra
-     * en la posición con valor [position]
-     * @param position contiene la posición del contenido a devolver
-     * @return el contenido del nodo en la posición [position]
+     * Obtiene el contenido del nodo que se encuentra en la posición especificada.
+     *
+     * @param position Posición del contenido a obtener (0-indexed)
+     * @return Valor entero almacenado en el nodo de la posición especificada
+     * @throws IndexOutOfBoundsException Si la posición es inválida
      */
     public int getContent(int position) {
         return getNodeAt(position).getContent();
     }
 
     /**
-     * Indica si la lista está vacía o no.
-     * @return devuelve [true] si y solo si la lista
-     * no contiene ningún nodo. Devuelve [false] en caso
-     * contrario.
+     * Verifica si la lista está vacía.
+     *
+     * @return true si la lista no contiene ningún nodo, false en caso contrario
      */
     public boolean isEmpty() {
         return this.size == 0;
     }
 
     /**
-     * Este método muestra por pantalla los nodos
-     * que contiene la lista enlazada. Siempre desde la
-     * primera posición hasta la última.
+     * Muestra por pantalla todos los nodos de la lista.
+     *
+     * Los nodos se muestran desde el primero (head) hasta el último (tail),
+     * con el formato: "Lista: valor1 <-> valor2 <-> valor3"
      */
     public void show() {
         System.out.print("Lista: ");
@@ -251,9 +327,10 @@ public class DoubleLinkedList {
     }
 
     /**
-     * Este método muestra por pantalla los nodos
-     * que contiene la lista enlazada. Desde la
-     * última posición hasta la primera (en reversa).
+     * Muestra por pantalla todos los nodos de la lista en orden inverso.
+     *
+     * Los nodos se muestran desde el último (tail) hasta el primero (head),
+     * con el formato: "Lista (reversa): valor3 <-> valor2 <-> valor1"
      */
     public void showReverse() {
         System.out.print("Lista (reversa): ");
@@ -269,8 +346,9 @@ public class DoubleLinkedList {
     }
 
     /**
-     * Este método elimina todos los elementos de la lista
-     * enlazada doble, dejándola vacía.
+     * Elimina todos los elementos de la lista, dejándola vacía.
+     *
+     * Resetea head y tail a null, y el tamaño a 0.
      */
     public void clear() {
         this.head = null;
