@@ -4,6 +4,7 @@ package practica1;
 import java.util.Random;
 
 public class Main3 {
+
     /**
      * Pre: ---
      * Post: crea 10 hilos distintos, cada uno con un tiempo de espera

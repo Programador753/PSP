@@ -1,6 +1,7 @@
 package practica1;
 
 public class Main1 {
+
 	/**
 	 * Pre: ---
 	 * Post: crea 3 hilos distintos, cada uno con sus atributos

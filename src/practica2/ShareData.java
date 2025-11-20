@@ -5,6 +5,9 @@ import java.util.concurrent.Semaphore;
 /**
  * Clase para almacenar todos los datos compartidos entre threads
  * con sus respectivos getters y setters para acceso sincronizado
+ *
+ * @author Sistema PSP
+ * @version 1.0
  */
 public class ShareData {
     // Dimensiones del problema
@@ -127,7 +130,7 @@ public class ShareData {
     /**
      * Pre: tiempoEjecucion >= 0, idThread >= 0
      * Post: Actualiza tMax e idMasLento si este thread ha sido más lento
-     *       usando exclusión mutua con semáforo
+     * usando exclusión mutua con semáforo
      */
     public void actualizarThreadMasLento(long tiempoEjecucion, int idThread) {
         try {

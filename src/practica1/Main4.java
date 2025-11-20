@@ -3,11 +3,12 @@ package practica1;
 import java.util.Random;
 
 public class Main4 {
+
     /**
      * Pre: ---
      * Post: Crea un vector de 100 números aleatorios y lanza tres hilos
-     *       para calcular concurrentemente la media, máximo/mínimo y
-     *       desviación típica. Muestra los resultados por pantalla.
+     * para calcular concurrentemente la media, máximo/mínimo y
+     * desviación típica. Muestra los resultados por pantalla.
      */
     public static void main(String[] args) {
         // Crear y rellenar el vector con números aleatorios

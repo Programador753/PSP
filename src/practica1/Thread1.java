@@ -1,9 +1,9 @@
 package practica1;
 
 public class Thread1 extends Thread {
-	private String mensaje;
-	private int retardo;
-	private int veces;
+	private String mensaje; // Variable que contiene el mensaje a imprimir
+	private int retardo; // Variable que indica el tiempo de espera
+	private int veces; // Var
 	
 	public Thread1(String mensaje, int retardo, int veces) {
 		this.mensaje = mensaje;
