@@ -21,7 +21,7 @@ public class MainCorreo {
         Usuario[] usuarios = new Usuario[3];
         for (int i = 0; i < 3; i++) {
             usuarios[i] = new Usuario("User" + (i + 1), bandeja);
-            usuarios[i].start();
+            usuarios[i].start(); // Inicia el hilo de usuario
         }
 
         // 4. Espera a los productores
