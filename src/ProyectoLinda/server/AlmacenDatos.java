@@ -10,6 +10,8 @@ import java.util.concurrent.Semaphore;
 public class AlmacenDatos {
     private List<TuplaLinda> inventarioTuplas;
     private Semaphore semaforoAcceso;
+    private Semaphore semaforoSincronizacion;
+    private boolean enSincronizacion;
     /**
      * Pre: Ninguna.
      * Post: Inicializa lista y mutex.
@@ -17,6 +19,8 @@ public class AlmacenDatos {
     public AlmacenDatos() {
         this.inventarioTuplas = new ArrayList<>();
         this.semaforoAcceso = new Semaphore(1);
+        this.semaforoSincronizacion = new Semaphore(1);
+        this.enSincronizacion = false;
     }
     /**
      * Pre: Tupla valida.
@@ -24,6 +28,14 @@ public class AlmacenDatos {
      */
     public void postNote(TuplaLinda tupla) {
         try {
+            semaforoSincronizacion.acquire();
+            if (enSincronizacion) {
+                System.out.println("BLOQUEADO: Servidor en proceso de sincronización. Operación rechazada.");
+                semaforoSincronizacion.release();
+                return;
+            }
+            semaforoSincronizacion.release();
+
             semaforoAcceso.acquire();
             inventarioTuplas.add(tupla);
             System.out.println("Almacenado: " + tupla);
@@ -40,6 +52,14 @@ public class AlmacenDatos {
     public TuplaLinda removeNote(TuplaLinda patron) {
         TuplaLinda encontrada = null;
         try {
+            semaforoSincronizacion.acquire();
+            if (enSincronizacion) {
+                System.out.println("BLOQUEADO: Servidor en proceso de sincronización. Operación rechazada.");
+                semaforoSincronizacion.release();
+                return null;
+            }
+            semaforoSincronizacion.release();
+
             semaforoAcceso.acquire();
             Iterator<TuplaLinda> it = inventarioTuplas.iterator();
             while (it.hasNext()) {
@@ -106,6 +126,55 @@ public class AlmacenDatos {
             e.printStackTrace();
         } finally {
             semaforoAcceso.release();
+        }
+    }
+
+    /**
+     * Pre: Ninguna.
+     * Post: Inicia modo sincronización bloqueando operaciones de escritura.
+     */
+    public void iniciarSincronizacion() {
+        try {
+            semaforoSincronizacion.acquire();
+            enSincronizacion = true;
+            System.out.println(">>> SINCRONIZACIÓN INICIADA - Operaciones bloqueadas <<<");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            semaforoSincronizacion.release();
+        }
+    }
+
+    /**
+     * Pre: Lista valida de la replica.
+     * Post: Limpia datos actuales y carga datos de la replica de forma segura.
+     */
+    public void sincronizarDesdeReplica(List<TuplaLinda> datosReplica) {
+        try {
+            semaforoAcceso.acquire();
+            inventarioTuplas.clear();
+            inventarioTuplas.addAll(datosReplica);
+            System.out.println(">>> Datos sincronizados: " + datosReplica.size() + " tuplas recuperadas <<<");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            semaforoAcceso.release();
+        }
+    }
+
+    /**
+     * Pre: Ninguna.
+     * Post: Finaliza modo sincronización permitiendo operaciones normales.
+     */
+    public void finalizarSincronizacion() {
+        try {
+            semaforoSincronizacion.acquire();
+            enSincronizacion = false;
+            System.out.println(">>> SINCRONIZACIÓN COMPLETADA - Servidor operativo <<<");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            semaforoSincronizacion.release();
         }
     }
 }

@@ -38,18 +38,37 @@ public class ServidorNodo {
      * Post: Copia datos de replica a principal.
      */
     private static void recuperarDeReplica(AlmacenDatos almacen) {
-        System.out.println("Intentando recuperar datos...");
+        System.out.println("==============================================");
+        System.out.println("SERVIDOR PRINCIPAL INICIANDO RECUPERACIÓN");
+        System.out.println("==============================================");
+
+        // Bloquear operaciones durante la sincronización
+        almacen.iniciarSincronizacion();
+
         try (Socket s = new Socket("localhost", PUERTO_REPLICA);
              ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream());
              ObjectInputStream in = new ObjectInputStream(s.getInputStream())) {
+
+            System.out.println("Conectado a réplica en puerto " + PUERTO_REPLICA);
+            System.out.println("Solicitando datos...");
+
             out.writeObject(new MensajeRed(MensajeRed.TipoOperacion.SINCRONIZAR, (TuplaLinda)null));
             MensajeRed resp = (MensajeRed) in.readObject();
+
             if (resp.obtenerTipo() == MensajeRed.TipoOperacion.RESPUESTA_SYNC) {
-                almacen.cargarDatosMasivos(resp.obtenerLista());
-                System.out.println("Datos recuperados exitosamente.");
+                System.out.println("Transferencia iniciada desde réplica...");
+                almacen.sincronizarDesdeReplica(resp.obtenerLista());
+                System.out.println("==============================================");
+                System.out.println("RECUPERACIÓN EXITOSA");
+                System.out.println("==============================================");
             }
         } catch (Exception e) {
-            System.out.println("Replica no disponible. Iniciando vacio.");
+            System.out.println("==============================================");
+            System.out.println("Réplica no disponible. Iniciando vacío.");
+            System.out.println("==============================================");
+        } finally {
+            // Desbloquear operaciones
+            almacen.finalizarSincronizacion();
         }
     }
 }
