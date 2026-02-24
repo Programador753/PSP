@@ -9,6 +9,7 @@ public class Transaction implements Serializable {
     private String clavePublicaEmisor;
     private String clavePublicaReceptor;
     private double monto;
+
     /**
      * Constructor de la clase Transaction que inicializa todos los atributos.
      * Pre: Los parámetros id, clavePublicaEmisor y clavePublicaReceptor no deben ser nulos.
