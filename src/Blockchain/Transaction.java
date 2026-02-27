@@ -1,63 +1,116 @@
 package Blockchain;
 
 import java.io.Serializable;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
+
 /**
  * Clase que representa una transacción en la red blockchain transportando valor entre usuarios.
+ * Cada transacción lleva una firma digital ECDSA que garantiza la autenticidad del emisor.
  */
 public class Transaction implements Serializable {
     private String id;
-    private String clavePublicaEmisor;
-    private String clavePublicaReceptor;
+    private String clavePublicaEmisor;   // Base64 de la clave pública del emisor
+    private String clavePublicaReceptor;  // Base64 de la clave pública del receptor
     private double monto;
+    private byte[] firma;                 // Firma digital ECDSA del emisor
 
     /**
-     * Constructor de la clase Transaction que inicializa todos los atributos.
+     * Constructor de la clase Transaction.
      * Pre: Los parámetros id, clavePublicaEmisor y clavePublicaReceptor no deben ser nulos.
-     * El monto debe ser un número válido.
-     * Post: Se crea un objeto Transaction con los valores proporcionados asignados a sus respectivos atributos.
+     * Post: Se crea un objeto Transaction sin firma (debe firmarse después con firmar()).
      */
     public Transaction(String id, String clavePublicaEmisor, String clavePublicaReceptor, double monto) {
         this.id = id;
         this.clavePublicaEmisor = clavePublicaEmisor;
         this.clavePublicaReceptor = clavePublicaReceptor;
         this.monto = monto;
+        this.firma = null;
     }
+
     /**
-     * Método que devuelve el identificador único de la transacción.
-     * Pre: El objeto Transaction debe estar correctamente instanciado.
-     * Post: Retorna una cadena de texto con el hash o identificador de la transacción.
+     * Convierte una PublicKey a su representación Base64 para serialización.
      */
+    public static String clavePublicaABase64(PublicKey clave) {
+        return Base64.getEncoder().encodeToString(clave.getEncoded());
+    }
+
+    /**
+     * Reconstruye una PublicKey desde su representación Base64.
+     * Necesario para verificar firmas de transacciones recibidas por red.
+     */
+    public static PublicKey base64AClavePublica(String base64) {
+        try {
+            byte[] bytes = Base64.getDecoder().decode(base64);
+            X509EncodedKeySpec spec = new X509EncodedKeySpec(bytes);
+            KeyFactory kf = KeyFactory.getInstance("EC");
+            return kf.generatePublic(spec);
+        } catch (Exception e) {
+            System.out.println("Error al reconstruir clave pública: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Firma la transacción con la clave privada del emisor.
+     * Pre: La clave privada debe corresponder a la clave pública del emisor.
+     * Post: El campo firma queda establecido con la firma digital ECDSA.
+     */
+    public void firmar(PrivateKey clavePrivada) {
+        String datos = getDatosParaFirmar();
+        this.firma = SignatureUtil.firmar(clavePrivada, datos);
+    }
+
+    /**
+     * Verifica que la firma de la transacción es válida usando la clave pública del emisor.
+     * Reconstruye la PublicKey desde el Base64 almacenado en clavePublicaEmisor.
+     * @return true si la firma es válida, false en caso contrario.
+     */
+    public boolean verificarFirma() {
+        if (firma == null) {
+            System.out.println("La transacción no está firmada.");
+            return false;
+        }
+        PublicKey clave = base64AClavePublica(clavePublicaEmisor);
+        if (clave == null) {
+            return false;
+        }
+        String datos = getDatosParaFirmar();
+        return SignatureUtil.verificar(clave, datos, firma);
+    }
+
+    /**
+     * Devuelve la cadena de datos que se firma/verifica (sin incluir la propia firma).
+     */
+    private String getDatosParaFirmar() {
+        return id + clavePublicaEmisor + clavePublicaReceptor + monto;
+    }
+
     public String getId() {
         return id;
     }
-    /**
-     * Método que devuelve la clave pública del emisor de la transacción.
-     * Pre: El objeto Transaction debe estar correctamente instanciado.
-     * Post: Retorna una cadena de texto con la clave pública del usuario que envía los fondos.
-     */
+
     public String getClavePublicaEmisor() {
         return clavePublicaEmisor;
     }
-    /**
-     * Método que devuelve la clave pública del receptor de la transacción.
-     * Pre: El objeto Transaction debe estar correctamente instanciado.
-     * Post: Retorna una cadena de texto con la clave pública del usuario que recibe los fondos.
-     */
+
     public String getClavePublicaReceptor() {
         return clavePublicaReceptor;
     }
-    /**
-     * Método que devuelve la cantidad de valor transferido en la transacción.
-     * Pre: El objeto Transaction debe estar correctamente instanciado.
-     * Post: Retorna un valor numérico decimal que representa el monto de la transacción.
-     */
+
     public double getMonto() {
         return monto;
     }
+
+    public byte[] getFirma() {
+        return firma;
+    }
+
     /**
-     * Método que serializa la transacción concatenando sus atributos en texto continuo.
-     * Pre: El objeto Transaction debe tener sus atributos inicializados.
-     * Post: Retorna una cadena de texto que une el id, emisor, receptor y monto, útil para envíos por red.
+     * Serialización para el cálculo de hash del bloque.
      */
     @Override
     public String toString() {

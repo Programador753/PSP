@@ -2,96 +2,136 @@ package Blockchain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 /**
  * Esta clase representa el mempool, un espacio temporal donde se almacenan las transacciones que aún no han sido
- * incluidas en un bloque. El mempool actúa como una especie de "sala de espera" para las transacciones,
- * permitiendo que los mineros seleccionen cuáles incluir en el próximo bloque a minar. Las transacciones en el mempool
- * pueden ser agregadas por los usuarios y permanecen allí hasta que son confirmadas en la cadena de bloques,
- * momento en el cual se eliminan del mempool.
+ * incluidas en un bloque. Protegido con semáforos para acceso concurrente seguro desde múltiples hilos.
  */
 public class Mempool {
 
-    //Lista que almacena las transacciones que aun no han sido minadas
-    public List<Transaction> transacciones;
+    // Lista que almacena las transacciones que aún no han sido minadas
+    private List<Transaction> transacciones;
+
+    // Semáforo binario (mutex) para proteger el acceso concurrente al mempool
+    private final Semaphore semaforo;
 
     /**
-     *  Constructor de la clase Mempool que inicializa la lista de transacciones vacía.
-     *  Pre: No se requiere ningún parámetro para la creación del mempool.
-     *  Post: Se crea un objeto Mempool con una lista de transacciones vacía, listo para almacenar nuevas transacciones.
-     *  El mempool actúa como un espacio temporal donde las transacciones se mantienen hasta que son incluidas en un
-     *  bloque por los mineros.
+     * Constructor de la clase Mempool que inicializa la lista de transacciones vacía y el semáforo.
+     * Post: Se crea un objeto Mempool con una lista vacía y un semáforo binario (1 permiso).
      */
-    public Mempool(){
+    public Mempool() {
         transacciones = new ArrayList<>();
+        semaforo = new Semaphore(1);
     }
 
     /**
-     * Método que agrega una transacción al mempool.
-     * Pre: El objeto Transaction debe ser válido y no nulo.
-     * Post: La transacción se agrega al mempool, quedando disponible para ser incluida en futuros bloques.
-     * @param transaccion Objeto Transaction que representa la transacción a agregar al mempool. No debe ser nulo.
+     * Método que agrega una transacción al mempool de forma thread-safe.
+     * Usa semáforo para garantizar exclusión mutua.
+o     * @return true si la transacción fue añadida (era nueva), false si ya existía o era nula.
      */
-    public void agregarTransaccion(Transaction transaccion){
-
-        if(transaccion != null){
-            transacciones.add(transaccion);
-        }
-        else{
-            System.out.println("Transaccion no encontrada o esta vacia");
+    public boolean agregarTransaccion(Transaction transaccion) {
+        try {
+            semaforo.acquire();
+            try {
+                if (transaccion != null) {
+                    // Evitar duplicados por ID
+                    for (Transaction tx : transacciones) {
+                        if (tx.getId().equals(transaccion.getId())) {
+                            return false; // Ya existe, no la añade
+                        }
+                    }
+                    transacciones.add(transaccion);
+                    return true;
+                } else {
+                    System.out.println("Transacción no encontrada o está vacía");
+                    return false;
+                }
+            } finally {
+                semaforo.release();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println("Hilo interrumpido al agregar transacción");
+            return false;
         }
     }
 
     /**
-     * Método que devuelve una lista con las primeras N transacciones del mempool.
-     * Pre: El número de transacciones a obtener debe ser un valor positivo y menor o igual al tamaño del mempool.
-     * Post: Retorna una lista de objetos Transaction que contiene
-     * las primeras transacciones del mempool, hasta el número especificado o el total disponible si es menor.
-     * @param numeroTransacciones Número de transacciones a obtener del mempool. Debe ser un valor positivo y no mayor
-     *                            al tamaño actual del mempool.
-     * @return Una lista de objetos Transaction que contiene las primeras transacciones del mempool,
-     * limitada por el número especificado.
+     * Método que devuelve una lista con las primeras N transacciones del mempool de forma thread-safe.
      */
-    public List<Transaction> obtenerPrimeras(int numeroTransacciones){
-
-        // Lista de transacciones que se devolverá al final del método, inicialmente vacía
+    public List<Transaction> obtenerPrimeras(int numeroTransacciones) {
         List<Transaction> listaTransacciones = new ArrayList<>();
-
-        //Calcula la cantidad de transacciones que va a sacar del mempool, que será el minimo entre el numero solicitado
-        //y el tamaño actual del mempool, para evitar errores de indice
-        int cantidadASacar = Math.min(numeroTransacciones, transacciones.size());
-
-        //Agrega a la lista de transacciones a devolver las primeras transacciones
-        for(int i = 0; i < cantidadASacar; i++){
-            listaTransacciones.add(transacciones.get(i));
+        try {
+            semaforo.acquire();
+            try {
+                int cantidadASacar = Math.min(numeroTransacciones, transacciones.size());
+                for (int i = 0; i < cantidadASacar; i++) {
+                    listaTransacciones.add(transacciones.get(i));
+                }
+            } finally {
+                semaforo.release();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println("Hilo interrumpido al obtener transacciones");
         }
-
         return listaTransacciones;
     }
 
     /**
-     * Método que elimina las transacciones que han sido minadas del mempool.
-     * Pre: La lista de transacciones minadas debe contener objetos Transaction válidos que correspond
-     * a transacciones que están actualmente en el mempool.
-     * Post: Las transacciones que han sido minadas se eliminan del mempool,
-     * dejando solo las transacciones que aún no han sido confirmadas en la cadena de bloques. Esto asegura
-     * que el mempool se mantenga actualizado y solo contenga transacciones pendientes de ser minadas.
-     * @param transaccionesMinadas Lista de objetos Transaction que representa las transacciones que han sido minadas
-     *                             y deben ser eliminadas del mempool.
+     * Método que elimina las transacciones que han sido minadas del mempool de forma thread-safe.
      */
-    public void eliminarTransacciones(List<Transaction> transaccionesMinadas){
-        // Esto busca y borra de golpe y de forma segura todas las coincidencias
-        transacciones.removeAll(transaccionesMinadas);
+    public void eliminarTransacciones(List<Transaction> transaccionesMinadas) {
+        try {
+            semaforo.acquire();
+            try {
+                // Elimina por ID para evitar problemas de referencia entre procesos
+                List<String> idsMinados = new ArrayList<>();
+                for (Transaction tx : transaccionesMinadas) {
+                    idsMinados.add(tx.getId());
+                }
+                transacciones.removeIf(tx -> idsMinados.contains(tx.getId()));
+            } finally {
+                semaforo.release();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println("Hilo interrumpido al eliminar transacciones");
+        }
     }
 
     /**
-     * Método que verifica si el mempool está vacío.
-     * Pre: No se requiere ningún parámetro para esta verificación.
-     * Post: Retorna un valor booleano que indica si el mempool no contiene transacciones. Si el mempool está vacío,
-     * devuelve true; de lo contrario, devuelve false.
-     * @return
+     * Método que verifica si el mempool está vacío de forma thread-safe.
      */
-    public boolean estaVacio(){
-        return transacciones.isEmpty();
+    public boolean estaVacio() {
+        try {
+            semaforo.acquire();
+            try {
+                return transacciones.isEmpty();
+            } finally {
+                semaforo.release();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return true;
+        }
+    }
+
+    /**
+     * Devuelve el número de transacciones pendientes de forma thread-safe.
+     */
+    public int size() {
+        try {
+            semaforo.acquire();
+            try {
+                return transacciones.size();
+            } finally {
+                semaforo.release();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return 0;
+        }
     }
 }
