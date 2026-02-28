@@ -16,6 +16,8 @@ public class Mensaje implements Serializable {
     public static final String SYNC_RESPONSE = "SYNC_RESPONSE";
     public static final String CONTACT_INFO = "CONTACT_INFO";
     public static final String NEW_NODE = "NEW_NODE";
+    public static final String SYNC_MEMPOOL_REQUEST = "SYNC_MEMPOOL_REQUEST";
+    public static final String SYNC_MEMPOOL_RESPONSE = "SYNC_MEMPOOL_RESPONSE";
 
     private String tipo;
     private Object payload;

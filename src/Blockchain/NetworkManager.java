@@ -111,7 +111,9 @@ public class NetworkManager {
                 oos.writeObject(new Mensaje(Mensaje.PEER_LIST, nuestraPeerList));
                 oos.flush();
 
-                // También enviamos nuestros contactos automáticamente
+                // También enviamos TODOS nuestros contactos automáticamente
+                // Pequeña espera para asegurar que contactos recientes estén registrados
+                try { Thread.sleep(100); } catch (InterruptedException ignored) {}
                 HashMap<String, String> nuestrosContactosPeer = new HashMap<>(nodoLocal.getContactos());
                 oos.writeObject(new Mensaje(Mensaje.CONTACT_INFO, nuestrosContactosPeer));
                 oos.flush();
@@ -161,7 +163,48 @@ public class NetworkManager {
                     System.out.println("[" + nodoLocal.getNombre() + "] \uD83D\uDD14 Nodo nuevo en la red: "
                             + nombreNuevo + " (" + direccionNuevo + ")");
                     propagarMensaje(mensaje);
+
+                    // Enviar nuestros contactos completos al nuevo nodo para que los conozca
+                    try {
+                        String ipNuevo = extraerIP(direccionNuevo);
+                        int puertoNuevo = extraerPuerto(direccionNuevo);
+                        try (Socket socketNuevo = new Socket(ipNuevo, puertoNuevo);
+                             ObjectOutputStream oosNuevo = new ObjectOutputStream(socketNuevo.getOutputStream());
+                             ObjectInputStream oisNuevo = new ObjectInputStream(socketNuevo.getInputStream())) {
+
+                            HashMap<String, String> todosContactos = new HashMap<>(nodoLocal.getContactos());
+                            oosNuevo.writeObject(new Mensaje(Mensaje.CONTACT_INFO, todosContactos));
+                            oosNuevo.flush();
+
+                            // Leer respuesta (el nuevo nodo responderá con sus contactos)
+                            Object respNuevo = oisNuevo.readObject();
+                            if (respNuevo instanceof Mensaje msgNuevo) {
+                                if (msgNuevo.getTipo().equals(Mensaje.CONTACT_INFO)) {
+                                    @SuppressWarnings("unchecked")
+                                    HashMap<String, String> contactosDelNuevo = (HashMap<String, String>) msgNuevo.getPayload();
+                                    for (var e : contactosDelNuevo.entrySet()) {
+                                        nodoLocal.registrarContacto(e.getKey(), e.getValue());
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        // No es crítico si falla, el nodo nuevo ya tiene contactos del paso de conexión
+                    }
                 }
+                break;
+
+            case Mensaje.SYNC_MEMPOOL_REQUEST:
+                // Un nodo nuevo pide las transacciones pendientes del mempool
+                int totalPendientes = nodoLocal.getMempool().size();
+                ArrayList<Transaction> txsPendientes = new ArrayList<>(nodoLocal.getMempool().obtenerPrimeras(totalPendientes));
+                oos.writeObject(new Mensaje(Mensaje.SYNC_MEMPOOL_RESPONSE, txsPendientes));
+                oos.flush();
+                System.out.println("[" + nodoLocal.getNombre() + "] Mempool enviado a peer solicitante (" + txsPendientes.size() + " transacciones)");
+                break;
+
+            case Mensaje.SYNC_MEMPOOL_RESPONSE:
+                // Se procesa en conectarAPeer
                 break;
         }
     }
@@ -181,7 +224,7 @@ public class NetworkManager {
         String ip = extraerIP(direccionRemota);
         int puerto = extraerPuerto(direccionRemota);
 
-        // Paso 1: Intercambiar lista de peers y contactos
+        // Paso 1: Intercambiar lista de peers y contactos con el nodo inicial
         try (Socket socket = new Socket(ip, puerto);
              ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())) {
@@ -253,32 +296,69 @@ public class NetworkManager {
             System.out.println("[Red] Error al sincronizar blockchain con " + direccionRemota + ": " + e.getMessage());
         }
 
-        // Paso 3: Enviar nuestros contactos al peer remoto
+        // Paso 3: Intercambiar contactos con TODOS los peers descubiertos (no solo el inicial)
+        // Esto asegura que el nodo nuevo reciba los contactos de toda la red
+        for (String peer : new ArrayList<>(nodoLocal.getPeersConocidos())) {
+            try (Socket socket = new Socket(extraerIP(peer), extraerPuerto(peer));
+                 ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+                 ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())) {
+
+                HashMap<String, String> nuestrosContactos = new HashMap<>(nodoLocal.getContactos());
+                oos.writeObject(new Mensaje(Mensaje.CONTACT_INFO, nuestrosContactos));
+                oos.flush();
+
+                // Recibimos contactos del peer
+                Object respuesta = ois.readObject();
+                if (respuesta instanceof Mensaje msg) {
+                    if (msg.getTipo().equals(Mensaje.CONTACT_INFO)) {
+                        @SuppressWarnings("unchecked")
+                        HashMap<String, String> contactosRemotos = (HashMap<String, String>) msg.getPayload();
+                        for (var entry : contactosRemotos.entrySet()) {
+                            nodoLocal.registrarContacto(entry.getKey(), entry.getValue());
+                        }
+                    }
+                }
+
+            } catch (ConnectException e) {
+                // Peer no disponible, lo eliminamos
+                nodoLocal.getPeersConocidos().remove(peer);
+                System.out.println("[Red] Peer " + peer + " no disponible, eliminado de la lista.");
+            } catch (Exception e) {
+                System.out.println("[Red] Error al intercambiar contactos con " + peer + ": " + e.getMessage());
+            }
+        }
+
+        // Paso 4: Sincronizar mempool - pedir transacciones pendientes al nodo inicial
         try (Socket socket = new Socket(ip, puerto);
              ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())) {
 
-            HashMap<String, String> nuestrosContactos = new HashMap<>(nodoLocal.getContactos());
-            oos.writeObject(new Mensaje(Mensaje.CONTACT_INFO, nuestrosContactos));
+            oos.writeObject(new Mensaje(Mensaje.SYNC_MEMPOOL_REQUEST, null));
             oos.flush();
 
-            // Recibimos contactos actualizados del remoto
             Object respuesta = ois.readObject();
             if (respuesta instanceof Mensaje msg) {
-                if (msg.getTipo().equals(Mensaje.CONTACT_INFO)) {
+                if (msg.getTipo().equals(Mensaje.SYNC_MEMPOOL_RESPONSE)) {
                     @SuppressWarnings("unchecked")
-                    HashMap<String, String> contactosRemotos = (HashMap<String, String>) msg.getPayload();
-                    for (var entry : contactosRemotos.entrySet()) {
-                        nodoLocal.registrarContacto(entry.getKey(), entry.getValue());
+                    ArrayList<Transaction> txsPendientes = (ArrayList<Transaction>) msg.getPayload();
+                    int nuevas = 0;
+                    for (Transaction tx : txsPendientes) {
+                        if (tx.verificarFirma()) {
+                            boolean esNueva = nodoLocal.getMempool().agregarTransaccion(tx);
+                            if (esNueva) nuevas++;
+                        }
+                    }
+                    if (nuevas > 0) {
+                        System.out.println("[" + nodoLocal.getNombre() + "] Mempool sincronizado: " + nuevas + " transacciones pendientes recibidas");
                     }
                 }
             }
 
         } catch (Exception e) {
-            System.out.println("[Red] Error al intercambiar contactos con " + direccionRemota + ": " + e.getMessage());
+            System.out.println("[Red] Error al sincronizar mempool con " + direccionRemota + ": " + e.getMessage());
         }
 
-        // Paso 4: Notificar a TODA la red que nos hemos unido
+        // Paso 5: Notificar a TODA la red que nos hemos unido
         // Payload: [dirección, nombre, clavePublica]
         ArrayList<String> miInfo = new ArrayList<>();
         miInfo.add("localhost:" + nodoLocal.getPuerto());

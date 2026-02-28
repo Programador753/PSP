@@ -22,7 +22,7 @@ public class Blockchain implements Serializable {
      * ║    7 = muy difícil (minutos)                                 ║
      * ╚═══════════════════════════════════════════════════════════════╝
      */
-    public static final int DIFICULTAD = 5;
+    public static final int DIFICULTAD = 8;
 
     // Prefijo de ceros que debe tener el hash para ser válido (generado desde DIFICULTAD)
     public static final String PREFIJO_DIFICULTAD = "0".repeat(DIFICULTAD);
