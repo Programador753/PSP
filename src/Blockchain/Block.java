@@ -78,6 +78,17 @@ public class Block implements Serializable {
     public void setNonce(int nonce) {
         this.nonce = nonce;
     }
+
+    /**
+     * Método que establece el timestamp del bloque.
+     * Usado internamente para crear un bloque génesis determinista.
+     * Pre: El parámetro timestamp debe ser un valor válido en milisegundos.
+     * Post: El atributo timestamp del bloque se actualiza con el valor proporcionado.
+     */
+    protected void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
     /**
      * Método que concatena los campos del bloque en un orden específico para calcular su hash.
      * Pre: Los atributos del bloque deben estar debidamente inicializados.

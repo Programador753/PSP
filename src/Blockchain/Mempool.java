@@ -28,7 +28,7 @@ public class Mempool {
     /**
      * Método que agrega una transacción al mempool de forma thread-safe.
      * Usa semáforo para garantizar exclusión mutua.
-o     * @return true si la transacción fue añadida (era nueva), false si ya existía o era nula.
+     * @return true si la transacción fue añadida (era nueva), false si ya existía o era nula.
      */
     public boolean agregarTransaccion(Transaction transaccion) {
         try {

@@ -27,7 +27,7 @@ import java.util.UUID;
  *   /salir                                    - Cierra el nodo
  */
 public class Main {
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
 
         Scanner scanner = new Scanner(System.in);
 
@@ -48,7 +48,7 @@ public class Main {
         Node nodo = new Node(nombreNodo, puertoLocal);
         nodo.iniciar();
 
-        Thread.sleep(500); // Espera a que el servidor arranque
+        try { Thread.sleep(500); } catch (InterruptedException ignored) {} // Espera a que el servidor arranque
 
         // 4. Preguntar el rol del nodo
         System.out.println();
@@ -71,7 +71,7 @@ public class Main {
             System.out.println("Nodo principal iniciado. Esperando conexiones de otros nodos...");
         }
 
-        Thread.sleep(300);
+        try { Thread.sleep(300); } catch (InterruptedException ignored) {}
 
         // 5. Mostrar información del nodo
         System.out.println();
@@ -156,22 +156,33 @@ public class Main {
                         break;
                     }
 
-                    // Minar en un hilo separado para no bloquear la consola
-                    System.out.println("Iniciando proceso de minado...");
-                    Thread hiloMinado = new Thread(() -> {
-                        Miner miner = new Miner();
+                    // Verificar si ya hay un minado en curso
+                    if (nodo.getMinerActual() != null && nodo.getMinerActual().isMinando()) {
+                        System.out.println("Ya hay un proceso de minado en curso.");
+                        break;
+                    }
+
+                    // Crear minero y registrarlo en el nodo para que pueda ser detenido
+                    // si otro nodo mina el bloque primero
+                    System.out.println("Iniciando proceso de minado en segundo plano...");
+                    Miner miner = new Miner();
+                    nodo.setMinerActual(miner);
+
+                    // El minado se ejecuta en un hilo separado sin join() para no bloquear
+                    // la consola, permitiendo que el nodo siga recibiendo comandos y bloques
+                    new Thread(() -> {
                         String hashPrevio = nodo.getBlockchain().getUltimoBloque().getHash();
                         Block bloque = miner.minar(nodo.getMempool(), hashPrevio);
 
+                        // Limpiar la referencia al minero activo
+                        nodo.setMinerActual(null);
+
                         if (bloque != null) {
-                            // Añadir a nuestra cadena local (se verifica y propaga automáticamente a toda la red)
+                            // El bloque se verifica, añade a la cadena y propaga a la red
                             nodo.recibirBloque(bloque);
                             System.out.println("Bloque minado y propagado a " + nodo.getPeersConocidos().size() + " peers");
                         }
-                    });
-                    hiloMinado.start();
-                    // Esperar a que termine el minado
-                    hiloMinado.join();
+                    }).start();
                     break;
 
                 case "/estado":

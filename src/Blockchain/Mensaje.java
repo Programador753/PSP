@@ -1,3 +1,4 @@
+
 package Blockchain;
 
 import java.io.Serializable;
@@ -18,6 +19,7 @@ public class Mensaje implements Serializable {
     public static final String NEW_NODE = "NEW_NODE";
     public static final String SYNC_MEMPOOL_REQUEST = "SYNC_MEMPOOL_REQUEST";
     public static final String SYNC_MEMPOOL_RESPONSE = "SYNC_MEMPOOL_RESPONSE";
+    public static final String ACK = "ACK";  // Confirmación de recepción
 
     private String tipo;
     private Object payload;
@@ -45,4 +47,3 @@ public class Mensaje implements Serializable {
         return "Mensaje{tipo='" + tipo + "', payload=" + payload + "}";
     }
 }
-
